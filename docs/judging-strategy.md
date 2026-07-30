@@ -289,4 +289,8 @@ A smaller complete product is more valuable than a larger unfinished one.
 
 After the 60-minute MVP is functionally complete, further work must follow `docs/score-lift-plan.md`.
 
-That plan applies the six operating principles as hard gates, ranks only Package A (calculation credibility), Package B (demo-path explicitness), and optional Package C (five-second hierarchy), and forbids deferred stretch features.
+That plan applies the six operating principles as hard gates. Next designed package:
+
+* **Package H — Recommendation honesty** (required shifts = cash gap, not distinct days before risk).
+
+Then Package B (demo-path labels). Packages A/C remain optional. Deferred stretch features stay forbidden.

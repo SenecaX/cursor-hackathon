@@ -52,18 +52,18 @@ This is the only mutable section.
 
 | Field | Current value |
 |---|---|
-| Current phase | Post-MVP — Score-lift planning |
-| Status | `in_progress` |
+| Current phase | Post-MVP — all in-product bottlenecks closed |
+| Status | `completed` (H+B+D+A); hosting deferred |
 | Build start | 2026-07-29 19:23:31 MDT |
 | Deadline | 2026-07-29 20:23:31 MDT (MVP window); score-lift is post-MVP |
-| Core loop | Implemented and verified locally |
-| Automated tests | `npm test` — 9 passed |
+| Core loop | Honest recs + demos + delayed-pay + essential/risk-driver fixes |
+| Automated tests | `npm test` — 13 passed |
 | Production build | `npm run build` — pass |
 | Hosted application | Deferred to manual user deploy |
-| Data dictionary | Minimal MVP dictionary written |
+| Data dictionary | Updated for obligation_id essential-spend exclusion |
 | Deferred functionality | Wage advances, biweekly recurrence, optional scenarios |
-| Score-lift plan | `docs/score-lift-plan.md` drafted; awaiting package approval |
-| Next action | Approve Package A (calc credibility) or B (demo path), then implement only that package to closure |
+| Score-lift plan | H+B+D+A closed |
+| Next action | User hosts / pushes public repo; refresh screenshots if desired |
 
 ## 6. Entry Template
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { defaultDemoWorkerId, demoLabel, DEMO_WORKERS } from './data/demoWorkers'
 import { loadDataset } from './data/loadData'
 import type { DatasetIndex, WorkerBundle } from './data/types'
 import { computeDecision, type PlannedShift } from './domain/decision'
@@ -18,8 +19,7 @@ export default function App() {
       .then((d) => {
         if (cancelled) return
         setData(d)
-        const first = d.workers[0]?.workerId ?? ''
-        setWorkerId(first)
+        setWorkerId(defaultDemoWorkerId(d.workers.map((w) => w.workerId)))
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load data')
@@ -78,6 +78,7 @@ export default function App() {
   const minBal = Math.min(...decision.forecast.map((d) => d.closingBalanceCents), 0)
   const maxBal = Math.max(...decision.forecast.map((d) => d.closingBalanceCents), 1)
   const range = Math.max(maxBal - minBal, 1)
+  const activeDemo = demoLabel(workerId)
 
   function addShift() {
     if (!selectedDate) return
@@ -99,21 +100,33 @@ export default function App() {
           <p className="brand">ShiftSafe</p>
           <p className="tagline">Can I safely stop working today?</p>
         </div>
-        <label className="worker-select">
-          Worker
-          <select value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-            {data.workers.map((w) => (
-              <option key={w.workerId} value={w.workerId}>
-                {w.workerId} — {w.occupation} ({w.city})
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="worker-block">
+          <label className="worker-select">
+            Worker
+            <select value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
+              {data.workers.map((w) => {
+                const tag = demoLabel(w.workerId)
+                return (
+                  <option key={w.workerId} value={w.workerId}>
+                    {tag ? `${tag} — ` : ''}
+                    {w.workerId} — {w.occupation} ({w.city})
+                  </option>
+                )
+              })}
+            </select>
+          </label>
+          <p className="demo-hint">
+            Try {DEMO_WORKERS.atRisk} (rent cliff) → add shifts → status changes;{' '}
+            {DEMO_WORKERS.delayedPay} (delayed payout conservatism); {DEMO_WORKERS.safe} (Safe
+            control).
+          </p>
+        </div>
       </header>
 
       <p className="context">
         {bundle.worker.occupation} · {bundle.worker.city}, {bundle.worker.province} ·{' '}
         {bundle.worker.payType} · Analysis {decision.analysisDate || '—'}
+        {activeDemo ? ` · ${activeDemo}` : ''}
       </p>
 
       <section className={`decision ${statusClass}`}>
@@ -145,6 +158,15 @@ export default function App() {
             <span className="metric-value">{decision.firstRiskDate ?? 'None'}</span>
           </div>
         </div>
+        <p className="payout-line">
+          Accessible per shift:{' '}
+          {decision.accessibleEarningsPerShiftCents === null
+            ? 'unavailable'
+            : formatCad(decision.accessibleEarningsPerShiftCents)}
+          {decision.expectedNetPerShiftCents !== null && decision.sameDayPayoutRate !== null
+            ? ` = median ${formatCad(decision.expectedNetPerShiftCents)} × ${(decision.sameDayPayoutRate * 100).toFixed(0)}% same-day payout (delayed pay counted conservatively)`
+            : ''}
+        </p>
         {decision.primaryRiskObligation && (
           <p className="risk-cause">Primary risk driver: {decision.primaryRiskObligation}</p>
         )}
@@ -178,7 +200,8 @@ export default function App() {
           </button>
         </div>
         <p className="hint">
-          {planned.length} planned shift(s). Earnings credited at accessible rate only (
+          {planned.length} planned shift(s). Stack multiple shifts on one forecast date if needed.
+          Earnings credited at accessible rate only (
           {decision.accessibleEarningsPerShiftCents === null
             ? 'unavailable'
             : formatCad(decision.accessibleEarningsPerShiftCents)}

@@ -95,10 +95,10 @@ Use essential outgoing transactions from the 28 calendar days before the analysi
 
 Include zero-spending days in the average.
 
-Where transaction and obligation categories directly match, exclude those recurring categories from variable spending to reduce double counting.
+Exclude debit rows whose `notes` contain `obligation_id=` (obligation settlements already modeled in the forecast) to reduce double counting. Do not blanket-exclude entire categories solely because an obligation category matches.
 
 daily essential variable spending
-= essential non-recurring outgoing transactions during 28 days / 28
+= essential non-settlement outgoing transactions during 28 days / 28
 
 Do not construct speculative category mappings.
 
@@ -163,6 +163,8 @@ required additional shifts
 
 If accessible earnings are zero or unavailable, return Unavailable.
 
+**Semantics:** This value is the number of accessible-earning shift equivalents needed to close the coverage gap. It is **not** a count of distinct calendar workdays before the first risk date. Planned shifts may be stacked on the same forecast date. Recommendation copy must not claim that all required shifts fit strictly before the first risk date when the required count exceeds the number of forecast days on or before that date.
+
 7.15 Safe-to-Spend
 
 safe to spend
@@ -191,6 +193,8 @@ The 60-minute MVP supports only:
 * Removing a planned shift.
 * Resetting all planned shifts.
 
+Multiple planned shifts may be added on the same forecast date (stacking).
+
 Each change recalculates:
 
 * Safety status.
@@ -207,10 +211,15 @@ Custom earnings, payout timing, reserve adjustment and spending reduction are ou
 Condition	Recommendation
 Safe	Stopping today is safe within the modeled horizon
 Caution	Preserve cash or add shifts to restore the reserve
-At Risk	Add the calculated shifts before the first risk date
+At Risk (schedule within day count)	Add the calculated shifts to cover the coverage gap; prioritize on or before the first risk date when the shift count fits the available days on or before that date
+At Risk (requires stacking or later earnings)	Add the calculated shifts to cover the coverage gap; state the first risk date; disclose that the count is cash need, not distinct workdays, and that stacking same-day shifts and/or later earnings may be required
 Insufficient Data	Review the missing information before deciding
 
 Recommendations must include the primary reason and relevant dollar amounts.
+
+Do not use “Add N shifts before {first risk date}” as the sole instruction when N exceeds available forecast days on or before that date.
+
+Design detail: `docs/score-lift-plan.md` Package H.
 
 11. MVP Data Sources
 

@@ -31,12 +31,16 @@ For any selected worker in the dataset, ShiftSafe:
 
 ## Core demonstration flow
 
-1. Select a worker (try `W-0014` for At Risk).
+1. Open the app (defaults to demo worker `W-0220` — At Risk rent cliff).
 2. Read the status, recommended action, required shifts, and safe-to-spend.
-3. Review the 14-day forecast and upcoming obligations.
-4. Add planned shifts on forecast dates before the first risk date.
-5. Watch status, coverage gap, and recommendation update.
-6. Read the calculation explanation for assumptions.
+3. Note **accessible per shift = median × same-day payout rate** (delayed pay counted conservatively).
+4. Review the 14-day forecast and upcoming obligations.
+5. Add planned shifts on forecast dates (stack on one day if needed) until the status improves.
+6. Switch to `W-0071` (Demo · Delayed pay) to see a rent cliff with ~38% same-day payout.
+7. Switch to `W-0072` (Demo · Safe) for the control case.
+8. Read the calculation explanation for assumptions.
+
+Selector options are tagged for the recommended walkthrough.
 
 ## Screenshots
 
@@ -69,14 +73,14 @@ No backend, database, authentication, or external financial APIs.
 - **Expected net per shift** = median historical `net_pay_cad` ≤ analysis date.
 - **Same-day payout rate** = same-day-paid shifts / total historical shifts.
 - **Accessible earnings per shift** = expected net × same-day rate (delayed pay treated conservatively).
-- **Daily essential spending** = essential non-recurring debits over prior 28 days ÷ 28 (categories matching the worker’s essential monthly obligations excluded to reduce double-counting).
+- **Daily essential spending** = essential debits over prior 28 days ÷ 28, excluding rows with `obligation_id=` in notes (avoids double-counting forecast obligations without zeroing groceries/transit).
 - **Safety reserve** = 3 × daily essential spending.
 - **Forecast** = 14 days: prior balance + accessible planned-shift earnings − obligations due − daily essential spend.
-- **Required shifts** = ceil(coverage gap / accessible earnings), or Unavailable if accessible earnings are 0.
+- **Required shifts** = ceil(coverage gap / accessible earnings), or Unavailable if accessible earnings are 0. This is **cash-gap equivalents**, not distinct workdays before the first risk date; planned shifts may be stacked on one date.
 - **Safe-to-spend** = max(0, min projected balance − reserve).
 - **Biweekly obligations excluded** (schedule not verifiable from `due_day_of_month` alone).
 
-Forecasts are estimates, not guarantees.
+Forecasts are estimates, not guarantees. Recommendations never claim all required shifts fit strictly before the first risk date when the count exceeds available forecast days on or before that date.
 
 ## Dataset usage
 
@@ -118,6 +122,7 @@ npm run preview
 - Delayed earnings have no explicit pay date — modeled via same-day payout rate.
 - Only **monthly** recurrence is implemented; **biweekly** rows are excluded and disclosed.
 - Reserve fixed at three days; not user-adjustable.
+- Required shifts measure coverage-gap cash need; they may exceed distinct days before first risk (stacking / later earnings disclosed in recommendations).
 - Wage advances, custom analysis dates, and spending-reduction scenarios are out of scope.
 - Not financial advice.
 

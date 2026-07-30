@@ -34,5 +34,5 @@ Join key: `worker_id` across all used datasets.
 ## Material limitations
 - `earned_wage_advances.csv` ignored.
 - Delayed earnings have no payment date; accessible earnings = median net × same-day payout rate.
-- Essential variable spending excludes debit categories that match the worker’s essential obligation categories to reduce double-counting.
+- Essential variable spending excludes only debit rows with `obligation_id=` in notes (settlements), not entire matching categories.
 - Money stored as integer cents.

@@ -24,6 +24,8 @@ export type ForecastDay = {
   plannedShiftCount: number
 }
 
+export type SchedulePressure = 'none' | 'within_day_count' | 'requires_stacking_or_later_earnings'
+
 export type DecisionResult = {
   analysisDate: string
   status: SafetyStatus
@@ -40,6 +42,8 @@ export type DecisionResult = {
   cashShortfallCents: number
   coverageGapCents: number
   requiredAdditionalShifts: number | 'Unavailable'
+  availableActionDays: number
+  schedulePressure: SchedulePressure
   safeToSpendCents: number
   recommendedAction: string
   explanation: string[]
@@ -101,22 +105,38 @@ function computeAccessible(earnings: DailyEarning[]): {
 
 function dailyEssentialSpend(
   transactions: Transaction[],
-  obligations: Obligation[],
+  _obligations: Obligation[],
   analysisDate: string,
 ): number {
   const start = addDays(analysisDate, -27)
-  const recurringCategories = new Set(
-    obligations.filter((o) => o.essential && o.frequency === 'monthly').map((o) => o.category),
-  )
   let total = 0
   for (const t of transactions) {
     if (t.dateKey < start || t.dateKey > analysisDate) continue
     if (t.direction !== 'debit') continue
     if (!t.isEssential) continue
-    if (recurringCategories.has(t.category)) continue
+    // Exclude only obligation-settlement rows to avoid double-counting forecast obligations.
+    if (t.notes.includes('obligation_id=')) continue
     total += t.amountCents
   }
   return Math.round(total / 28)
+}
+
+function primaryRiskDriver(
+  firstRiskDate: string,
+  dayObligations: { name: string; amountCents: number }[],
+  upcoming: { dateKey: string; name: string; amountCents: number }[],
+): string {
+  const onDay = [...dayObligations].sort((a, b) => b.amountCents - a.amountCents)[0]
+  if (onDay) {
+    return `${onDay.name} (${(onDay.amountCents / 100).toFixed(2)} CAD)`
+  }
+  const next = upcoming
+    .filter((o) => o.dateKey >= firstRiskDate)
+    .sort((a, b) => a.dateKey.localeCompare(b.dateKey) || b.amountCents - a.amountCents)[0]
+  if (next) {
+    return `${next.name} on ${next.dateKey} (${(next.amountCents / 100).toFixed(2)} CAD)`
+  }
+  return 'Essential daily spending'
 }
 
 /** Monthly obligations only; biweekly excluded (ambiguous schedule). */
@@ -157,12 +177,31 @@ export function generateObligationsInHorizon(
   return out
 }
 
+function availableActionDays(
+  forecast: ForecastDay[],
+  firstRiskDate: string | null,
+): number {
+  if (firstRiskDate === null) return forecast.length
+  return forecast.filter((d) => d.dateKey <= firstRiskDate).length
+}
+
+function schedulePressureFor(
+  required: number | 'Unavailable',
+  availableDays: number,
+): SchedulePressure {
+  if (required === 'Unavailable' || required === 0) return 'none'
+  if (required <= availableDays) return 'within_day_count'
+  return 'requires_stacking_or_later_earnings'
+}
+
 function recommendation(
   status: SafetyStatus,
   required: number | 'Unavailable',
   firstRiskDate: string | null,
   coverageGapCents: number,
   safeToSpendCents: number,
+  accessibleCents: number | null,
+  pressure: SchedulePressure,
 ): string {
   if (status === 'Insufficient Data') {
     return 'Review the missing information before deciding.'
@@ -173,10 +212,25 @@ function recommendation(
   if (status === 'Caution') {
     return `Preserve cash or add shifts to restore the ${(coverageGapCents / 100).toFixed(2)} CAD reserve gap.`
   }
-  const shifts =
-    required === 'Unavailable' ? 'an unknown number of' : `${required}`
-  const when = firstRiskDate ? ` before ${firstRiskDate}` : ''
-  return `At risk of a cash gap. Add ${shifts} additional shift(s)${when} to cover the ${(coverageGapCents / 100).toFixed(2)} CAD coverage gap.`
+
+  const gap = (coverageGapCents / 100).toFixed(2)
+  if (required === 'Unavailable') {
+    return `At risk of a cash gap (${gap} CAD coverage gap), but required shifts are unavailable because accessible earnings per shift are zero or unknown.`
+  }
+
+  const perShift =
+    accessibleCents === null ? 'unknown' : `${(accessibleCents / 100).toFixed(2)} CAD`
+  const base = `At risk of a cash gap. Add ${required} additional shift(s) to cover the ${gap} CAD coverage gap (~${perShift} accessible each).`
+
+  if (!firstRiskDate || pressure === 'none') {
+    return base
+  }
+
+  if (pressure === 'within_day_count') {
+    return `${base} Prioritize shifts on or before ${firstRiskDate}.`
+  }
+
+  return `${base} First shortfall is projected on ${firstRiskDate} — fewer calendar days than ${required} shifts, so plan multiple shifts on the same day and/or earnings after that date; the count is cash needed, not distinct workdays.`
 }
 
 export function computeDecision(
@@ -239,10 +293,7 @@ export function computeDecision(
     if (closing < minBal) minBal = closing
     if (closing < 0 && firstRiskDate === null) {
       firstRiskDate = dateKey
-      const biggest = [...dayObl].sort((a, b) => b.amountCents - a.amountCents)[0]
-      primaryRiskObligation = biggest
-        ? `${biggest.name} (${(biggest.amountCents / 100).toFixed(2)} CAD)`
-        : 'Essential daily spending'
+      primaryRiskObligation = primaryRiskDriver(dateKey, dayObl, upcoming)
     }
     prev = closing
   }
@@ -278,6 +329,9 @@ export function computeDecision(
     status = 'Insufficient Data'
   }
 
+  const actionDays = availableActionDays(forecast, firstRiskDate)
+  const pressure = schedulePressureFor(requiredAdditionalShifts, actionDays)
+
   const explanation = [
     `Analysis date: ${analysisDate} (latest eligible transaction or weekly end).`,
     `Current balance: ${(balance.cents / 100).toFixed(2)} CAD from ${balance.source === 'transaction' ? 'latest running_balance_cad' : 'weekly ending_balance_cad'}.`,
@@ -290,8 +344,9 @@ export function computeDecision(
     accessible !== null
       ? `Accessible earnings per additional shift: ${(accessible / 100).toFixed(2)} CAD (median × same-day rate).`
       : 'Accessible earnings unavailable.',
-    `Daily essential variable spending (28-day avg, excl. recurring obligation categories): ${(dailySpend / 100).toFixed(2)} CAD.`,
+    `Daily essential variable spending (28-day avg, excl. obligation_id settlements): ${(dailySpend / 100).toFixed(2)} CAD.`,
     `Safety reserve = 3 × daily essential spending = ${(reserve / 100).toFixed(2)} CAD.`,
+    `Required shifts close the coverage gap at accessible earnings; they are not a count of distinct days before the first risk date.`,
     `Biweekly obligations excluded (unsupported recurrence). Forecast is an estimate, not a guarantee.`,
   ]
 
@@ -311,6 +366,8 @@ export function computeDecision(
     cashShortfallCents: cashShortfall,
     coverageGapCents: coverageGap,
     requiredAdditionalShifts,
+    availableActionDays: actionDays,
+    schedulePressure: pressure,
     safeToSpendCents: safeToSpend,
     recommendedAction: recommendation(
       status,
@@ -318,6 +375,8 @@ export function computeDecision(
       firstRiskDate,
       coverageGap,
       safeToSpend,
+      accessible,
+      pressure,
     ),
     explanation,
     forecast,
@@ -342,6 +401,8 @@ function insufficient(reason: string): DecisionResult {
     cashShortfallCents: 0,
     coverageGapCents: 0,
     requiredAdditionalShifts: 'Unavailable',
+    availableActionDays: 0,
+    schedulePressure: 'none',
     safeToSpendCents: 0,
     recommendedAction: 'Review the missing information before deciding.',
     explanation: [reason],

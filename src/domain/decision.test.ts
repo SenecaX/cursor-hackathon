@@ -361,4 +361,206 @@ describe('computeDecision', () => {
     expect(result.status).toBe('Insufficient Data')
     expect(result.requiredAdditionalShifts).toBe('Unavailable')
   })
+
+  it('does not claim bare before-risk scheduling when shifts exceed available days', () => {
+    const b = bundle({
+      transactions: [
+        {
+          txnId: 'T1',
+          workerId: 'W-TEST',
+          dateKey: '2026-06-30',
+          direction: 'credit',
+          amountCents: 0,
+          category: 'income',
+          isEssential: false,
+          runningBalanceCents: toCents(200),
+          notes: '',
+        },
+      ],
+      earnings: Array.from({ length: 5 }, (_, i) => ({
+        earningsId: `E${i}`,
+        workerId: 'W-TEST',
+        workDate: `2026-05-0${i + 1}`,
+        netPayCents: toCents(100),
+        paidSameDay: true,
+      })),
+      obligations: [
+        {
+          obligationId: 'O1',
+          workerId: 'W-TEST',
+          name: 'Rent',
+          category: 'housing',
+          amountCents: toCents(800),
+          frequency: 'monthly',
+          dueDayOfMonth: 1,
+          autopay: true,
+          essential: true,
+        },
+      ],
+    })
+    const result = computeDecision(b)
+    expect(result.status).toBe('At Risk')
+    expect(typeof result.requiredAdditionalShifts).toBe('number')
+    expect(result.requiredAdditionalShifts as number).toBeGreaterThan(result.availableActionDays)
+    expect(result.schedulePressure).toBe('requires_stacking_or_later_earnings')
+    expect(result.recommendedAction).not.toMatch(/before 2026-07-01/)
+    expect(result.recommendedAction).toMatch(/cash needed|not distinct workdays/i)
+    expect(result.explanation.some((line) => line.includes('not a count of distinct days'))).toBe(
+      true,
+    )
+  })
+
+  it('may prioritize on or before risk when shift count fits available days', () => {
+    const b = bundle({
+      transactions: [
+        {
+          txnId: 'T1',
+          workerId: 'W-TEST',
+          dateKey: '2026-06-01',
+          direction: 'credit',
+          amountCents: 0,
+          category: 'income',
+          isEssential: false,
+          runningBalanceCents: toCents(120),
+          notes: '',
+        },
+      ],
+      earnings: Array.from({ length: 5 }, (_, i) => ({
+        earningsId: `E${i}`,
+        workerId: 'W-TEST',
+        workDate: `2026-05-0${i + 1}`,
+        netPayCents: toCents(200),
+        paidSameDay: true,
+      })),
+      obligations: [
+        {
+          obligationId: 'O1',
+          workerId: 'W-TEST',
+          name: 'Loan',
+          category: 'debt_payment',
+          amountCents: toCents(250),
+          frequency: 'monthly',
+          dueDayOfMonth: 10,
+          autopay: true,
+          essential: true,
+        },
+      ],
+    })
+    const result = computeDecision(b)
+    expect(result.status).toBe('At Risk')
+    expect(typeof result.requiredAdditionalShifts).toBe('number')
+    expect(result.requiredAdditionalShifts as number).toBeGreaterThan(0)
+    expect(result.requiredAdditionalShifts as number).toBeLessThanOrEqual(result.availableActionDays)
+    expect(result.schedulePressure).toBe('within_day_count')
+    expect(result.recommendedAction).toMatch(/Prioritize shifts on or before/)
+    expect(result.recommendedAction).not.toMatch(/Add \d+ additional shift\(s\) before /)
+  })
+
+  it('counts grocery essentials even when housing obligations exist', () => {
+    const b = bundle({
+      transactions: [
+        {
+          txnId: 'T-bal',
+          workerId: 'W-TEST',
+          dateKey: '2026-06-28',
+          direction: 'credit',
+          amountCents: 0,
+          category: 'income',
+          isEssential: false,
+          runningBalanceCents: toCents(5000),
+          notes: '',
+        },
+        {
+          txnId: 'T-rent',
+          workerId: 'W-TEST',
+          dateKey: '2026-06-01',
+          direction: 'debit',
+          amountCents: toCents(1000),
+          category: 'housing',
+          isEssential: true,
+          runningBalanceCents: toCents(4000),
+          notes: 'obligation_id=O1',
+        },
+        {
+          txnId: 'T-groc',
+          workerId: 'W-TEST',
+          dateKey: '2026-06-15',
+          direction: 'debit',
+          amountCents: toCents(280),
+          category: 'groceries',
+          isEssential: true,
+          runningBalanceCents: toCents(3720),
+          notes: '',
+        },
+      ],
+      earnings: [
+        {
+          earningsId: 'E1',
+          workerId: 'W-TEST',
+          workDate: '2026-06-01',
+          netPayCents: toCents(100),
+          paidSameDay: true,
+        },
+      ],
+      obligations: [
+        {
+          obligationId: 'O1',
+          workerId: 'W-TEST',
+          name: 'Rent',
+          category: 'housing',
+          amountCents: toCents(1000),
+          frequency: 'monthly',
+          dueDayOfMonth: 1,
+          autopay: true,
+          essential: true,
+        },
+      ],
+    })
+    const result = computeDecision(b)
+    // 280 CAD groceries over 28 days = 10 CAD/day = 1000 cents
+    expect(result.dailyEssentialSpendCents).toBe(toCents(10))
+    expect(result.safetyReserveCents).toBe(toCents(30))
+  })
+
+  it('attributes next in-horizon obligation when first risk day has none', () => {
+    const b = bundle({
+      transactions: [
+        {
+          txnId: 'T1',
+          workerId: 'W-TEST',
+          dateKey: '2026-06-30',
+          direction: 'credit',
+          amountCents: 0,
+          category: 'income',
+          isEssential: false,
+          runningBalanceCents: toCents(-50),
+          notes: '',
+        },
+      ],
+      earnings: Array.from({ length: 3 }, (_, i) => ({
+        earningsId: `E${i}`,
+        workerId: 'W-TEST',
+        workDate: `2026-05-0${i + 1}`,
+        netPayCents: toCents(100),
+        paidSameDay: true,
+      })),
+      obligations: [
+        {
+          obligationId: 'O1',
+          workerId: 'W-TEST',
+          name: 'Rent',
+          category: 'housing',
+          amountCents: toCents(900),
+          frequency: 'monthly',
+          dueDayOfMonth: 1,
+          autopay: true,
+          essential: true,
+        },
+      ],
+    })
+    const result = computeDecision(b)
+    expect(result.status).toBe('At Risk')
+    expect(result.firstRiskDate).toBe('2026-06-30')
+    expect(result.primaryRiskObligation).toMatch(/Rent on 2026-07-01/)
+  })
 })
