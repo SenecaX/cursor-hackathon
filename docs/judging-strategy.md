@@ -284,3 +284,9 @@ When choosing the next task:
 5. Add stretch functionality.
 
 A smaller complete product is more valuable than a larger unfinished one.
+
+13. Post-MVP Score Lift
+
+After the 60-minute MVP is functionally complete, further work must follow `docs/score-lift-plan.md`.
+
+That plan applies the six operating principles as hard gates, ranks only Package A (calculation credibility), Package B (demo-path explicitness), and optional Package C (five-second hierarchy), and forbids deferred stretch features.

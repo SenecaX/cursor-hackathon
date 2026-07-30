@@ -52,17 +52,18 @@ This is the only mutable section.
 
 | Field | Current value |
 |---|---|
-| Current phase | Phase 1 — Foundation and Inspection |
-| Status | `not_started` |
-| Build start | Not recorded |
-| Deadline | Not recorded |
-| Core loop | Not implemented |
-| Automated tests | Not configured |
-| Production build | Not configured |
-| Hosted application | Not deployed |
-| Data dictionary | Pending minimal inspection |
-| Deferred functionality | Wage advances and optional scenarios |
-| Next action | Record the deadline and initialize the application |
+| Current phase | Post-MVP — Score-lift planning |
+| Status | `in_progress` |
+| Build start | 2026-07-29 19:23:31 MDT |
+| Deadline | 2026-07-29 20:23:31 MDT (MVP window); score-lift is post-MVP |
+| Core loop | Implemented and verified locally |
+| Automated tests | `npm test` — 9 passed |
+| Production build | `npm run build` — pass |
+| Hosted application | Deferred to manual user deploy |
+| Data dictionary | Minimal MVP dictionary written |
+| Deferred functionality | Wage advances, biweekly recurrence, optional scenarios |
+| Score-lift plan | `docs/score-lift-plan.md` drafted; awaiting package approval |
+| Next action | Approve Package A (calc credibility) or B (demo path), then implement only that package to closure |
 
 ## 6. Entry Template
 
@@ -108,17 +109,7 @@ Write `None observed` only when appropriate.
 
 ### Evidence Demonstrated
 
-List only verified evidence:
-
-- Data integration.
-- Domain modeling.
-- TypeScript implementation.
-- Automated testing.
-- UX implementation.
-- Deployment.
-- Technical communication.
-
-Remove unsupported items.
+List only verified evidence.
 
 ### Next Action
 
@@ -191,3 +182,116 @@ Define a coherent product and a 60-minute delivery strategy before implementatio
 ### Next Action
 
 Record the build start and deadline, then complete Phase 1 — Foundation and Inspection.
+
+---
+
+## Entry L-002 — Foundation, Data Layer, Decision Engine and Interface
+
+**Date:** 2026-07-29  
+**Roadmap phase:** Phases 1–4  
+**Status:** `completed`
+
+### Objective
+
+Deliver the complete worker → forecast → decision → planned-shift loop on real CSV data.
+
+### Changes
+
+- Vite React TypeScript app at repo root (`package.json`, `vite.config.ts`, `src/`).
+- `public/data/*.csv` — static copies of required raw datasets.
+- `src/lib/{csv,money,dates}.ts` — parsing and integer-cent helpers.
+- `src/data/{types,loadData}.ts` — worker-indexed dataset load.
+- `src/domain/decision.ts` — pure 14-day decision engine.
+- `src/domain/decision.test.ts` — critical financial tests.
+- `src/App.tsx` + `src/App.css` — single-screen MVP UI.
+- `docs/data-dictionary.md` — minimal used columns and recurrence semantics.
+
+### Decisions
+
+- **Decision:** Load CSVs from `/public/data` via `fetch` at runtime.
+- **Reason:** Smallest static deployment path; no bundler CSV plugins.
+
+- **Decision:** Implement monthly obligations only; exclude biweekly.
+- **Reason:** `due_day_of_month` alone does not verify biweekly schedules.
+
+- **Decision:** Keep all money math in integer cents outside React.
+- **Reason:** Spec invariant and Systemic Integrity.
+
+### Verification
+
+| Command or check | Result | Evidence |
+|---|---|---|
+| `npm test` | `pass` | 8–9 critical tests (later 9 after min-balance fix) |
+| Real-worker smoke (`tsx`) | `pass` | 220 workers: Safe 207 / Caution 1 / At Risk 12 / Insufficient 0 |
+| CSV headers inspected | `pass` | directions debit/credit; bool 0/1; freq monthly|biweekly |
+
+### Failures, Corrections and Gaps
+
+- **Failure:** `create-vite` cancelled on non-empty root.
+- **Correction:** Scaffolded in subdirectory and moved files up.
+- **Gap:** Hosted deployment not yet attempted.
+
+### Evidence Demonstrated
+
+- Data integration.
+- Domain modeling.
+- TypeScript implementation.
+- Automated testing.
+- UX implementation.
+
+### Next Action
+
+Verify, repair, build, deploy, document, and package submission artifacts.
+
+---
+
+## Entry L-003 — Verification, Deployment and Submission
+
+**Date:** 2026-07-29  
+**Roadmap phase:** Phases 5–7  
+**Status:** `blocked`
+
+### Objective
+
+Verify critical behavior, ship a production build, host the demo, and finish submission artifacts.
+
+### Changes
+
+- Fixed minimum projected balance to use forecast closing balances only (`src/domain/decision.ts`).
+- Added regression test for opening-balance seeding bug.
+- `README.md` — judge-oriented product doc with methodology and blockers.
+- `docs/screenshots/01-05-*.png` — five current screenshots.
+- `docs/submission.md` — submission description and handoff.
+
+### Decisions
+
+- **Decision:** Report auth blockers and preserve verified `dist/` rather than inventing a host.
+- **Reason:** AGENTS.md authorization stop condition; Mandatory Closure.
+
+### Verification
+
+| Command or check | Result | Evidence |
+|---|---|---|
+| `npm test` | `pass` | 9 tests passed |
+| `npm run build` | `pass` | `dist/` produced |
+| Scenario W-0014 | `pass` | At Risk → Safe after required planned shifts |
+| `vercel whoami` | `fail` | invalid token |
+| `gh auth status` | `fail` | invalid keyring token |
+| Screenshots | `pass` | five files in `docs/screenshots/` |
+
+### Failures, Corrections and Gaps
+
+- **Failure:** Min balance seeded with opening balance blocked recovery from already-negative cash.
+- **Correction:** Initialize min from forecast closings; test added.
+- **Gap:** Public hosted URL unavailable until user authenticates to Vercel or GitHub.
+
+### Evidence Demonstrated
+
+- Automated testing.
+- Deployment preparation.
+- Technical communication.
+- UX screenshots.
+
+### Next Action
+
+User: `vercel login` then `vercel --prod --yes`; paste URL into README Hosted demo section.
