@@ -59,11 +59,8 @@ This is the only mutable section.
 | Core loop | Shift-equivalents = accessible-cash units (not timesheet) |
 | Automated tests | `npm test` — 13 passed |
 | Production build | `npm run build` — pass |
-| Hosted application | Deferred to manual user deploy |
-| Data dictionary | Updated for obligation_id essential-spend exclusion |
-| Deferred functionality | Wage advances, biweekly recurrence, optional scenarios |
-| Score-lift plan | H+B+D+A+E closed |
-| Next action | User hosts / pushes public repo; refresh screenshots |
+| Hosted application | https://cursor-hackathon-iota-roan.vercel.app/ |
+| Next action | Optional Package C polish; keep screenshots/README in sync on redeploy |
 
 ## 6. Entry Template
 

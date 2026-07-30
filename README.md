@@ -6,14 +6,16 @@ ShiftSafe is a daily work-decision engine. It combines shift earnings, same-day 
 
 ## Hosted demo
 
-**Blocker:** Hosted URL pending authentication.
+**Live app:** [https://cursor-hackathon-iota-roan.vercel.app/](https://cursor-hackathon-iota-roan.vercel.app/)
 
-- `vercel whoami` → invalid token (`vercel login` required)
-- `gh auth status` → invalid GitHub token (`gh auth login` required)
+Public static deploy on Vercel. Open in a clean browser session — no login required.
 
-Verified locally with `npm run build && npm run preview` (production `dist/`).
+Local production preview:
 
-After auth, deploy with `vercel --prod --yes` and replace this section with the public URL.
+```bash
+npm run build && npm run preview
+```
+
 
 ## Worker problem
 
@@ -26,8 +28,8 @@ For any selected worker in the dataset, ShiftSafe:
 1. Sets the analysis date from the latest transaction (weekly summary fallback).
 2. Projects 14 calendar days of cash using accessible planned-shift earnings, monthly obligations, and essential variable spending.
 3. Classifies Safe / Caution / At Risk against a 3-day safety reserve.
-4. Calculates required additional shifts and safe-to-spend.
-5. Lets the worker add/remove planned shifts and recalculate immediately.
+4. Calculates required additional **shift-equivalents** and safe-to-spend.
+5. Lets the worker add/remove planned **earnings units** and recalculate immediately.
 
 ## Core demonstration flow
 
@@ -132,10 +134,11 @@ Built as a constrained solo MVP: real multi-dataset forecasting, conservative pa
 
 ## Deployment note
 
-Vercel CLI is installed but the current token is invalid (`vercel login` required). After login:
+Production host: [https://cursor-hackathon-iota-roan.vercel.app/](https://cursor-hackathon-iota-roan.vercel.app/)
+
+To redeploy after local changes:
 
 ```bash
-vercel --prod --yes
+npm run build && vercel --prod --yes
 ```
 
-Or serve `dist/` via GitHub Pages / any static host. Update this README with the public URL once hosted.
