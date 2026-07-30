@@ -197,6 +197,20 @@ Delivered:
 
 ---
 
+### Package E — Shift-equivalent terminology (IMPLEMENTED)
+
+**Status:** Implemented.
+
+**First Principles:** scenario actions are accessible-cash units timed to a date, not a literal timesheet.
+
+**Pareto:** removes judge-facing ambiguity that undermines Technical Execution and Innovation trust.
+
+**LEAN:** copy/labels only; formula and stacking behavior unchanged.
+
+Delivered: product-spec §§7.14–10, decision recommendations/explanation, UI metric + buttons + hint, README.
+
+---
+
 ### Package A — Calculation credibility (IMPLEMENTED)
 
 **Status:** Implemented.
@@ -319,4 +333,4 @@ Default stop rule: after H+B, **ship**. Do not invent Package D.
 
 ## 11. Next action
 
-**All analysis bottlenecks addressed in-product (H+B+D+A).** Remaining: user hosting / public repo. Ship.
+**In-product score-lift packages closed (H+B+D+A+E).** Remaining: user hosting / public repo. Ship.

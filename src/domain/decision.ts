@@ -210,27 +210,27 @@ function recommendation(
     return `Stopping today is safe within the modeled horizon. Safe-to-spend is ${(safeToSpendCents / 100).toFixed(2)} CAD above the 3-day reserve.`
   }
   if (status === 'Caution') {
-    return `Preserve cash or add shifts to restore the ${(coverageGapCents / 100).toFixed(2)} CAD reserve gap.`
+    return `Preserve cash or add shift-equivalents to restore the ${(coverageGapCents / 100).toFixed(2)} CAD reserve gap.`
   }
 
   const gap = (coverageGapCents / 100).toFixed(2)
   if (required === 'Unavailable') {
-    return `At risk of a cash gap (${gap} CAD coverage gap), but required shifts are unavailable because accessible earnings per shift are zero or unknown.`
+    return `At risk of a cash gap (${gap} CAD coverage gap), but required shift-equivalents are unavailable because accessible earnings per shift are zero or unknown.`
   }
 
   const perShift =
     accessibleCents === null ? 'unknown' : `${(accessibleCents / 100).toFixed(2)} CAD`
-  const base = `At risk of a cash gap. Add ${required} additional shift(s) to cover the ${gap} CAD coverage gap (~${perShift} accessible each).`
+  const base = `At risk of a cash gap. Add ${required} shift-equivalent(s) (~${perShift} accessible cash each) to cover the ${gap} CAD coverage gap.`
 
   if (!firstRiskDate || pressure === 'none') {
     return base
   }
 
   if (pressure === 'within_day_count') {
-    return `${base} Prioritize shifts on or before ${firstRiskDate}.`
+    return `${base} Prioritize landing that accessible cash on or before ${firstRiskDate}.`
   }
 
-  return `${base} First shortfall is projected on ${firstRiskDate} — fewer calendar days than ${required} shifts, so plan multiple shifts on the same day and/or earnings after that date; the count is cash needed, not distinct workdays.`
+  return `${base} First shortfall is projected on ${firstRiskDate}. A shift-equivalent is a cash chunk equal to one accessible shift — not a separate workday — so multiple units may share a date, or land after the risk date if they still lift later troughs.`
 }
 
 export function computeDecision(
@@ -346,7 +346,7 @@ export function computeDecision(
       : 'Accessible earnings unavailable.',
     `Daily essential variable spending (28-day avg, excl. obligation_id settlements): ${(dailySpend / 100).toFixed(2)} CAD.`,
     `Safety reserve = 3 × daily essential spending = ${(reserve / 100).toFixed(2)} CAD.`,
-    `Required shifts close the coverage gap at accessible earnings; they are not a count of distinct days before the first risk date.`,
+    `Required shift-equivalents close the coverage gap at accessible earnings; each unit is a cash chunk, not a distinct workday.`,
     `Biweekly obligations excluded (unsupported recurrence). Forecast is an estimate, not a guarantee.`,
   ]
 

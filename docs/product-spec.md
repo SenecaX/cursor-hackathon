@@ -163,7 +163,9 @@ required additional shifts
 
 If accessible earnings are zero or unavailable, return Unavailable.
 
-**Semantics:** This value is the number of accessible-earning shift equivalents needed to close the coverage gap. It is **not** a count of distinct calendar workdays before the first risk date. Planned shifts may be stacked on the same forecast date. Recommendation copy must not claim that all required shifts fit strictly before the first risk date when the required count exceeds the number of forecast days on or before that date.
+**Semantics:** This value is the number of **accessible-earning shift-equivalents** needed to close the coverage gap — i.e. chunks of same-day-accessible cash equal to one typical shift’s accessible pay. It is **not** a count of distinct calendar workdays, and stacking multiple units on one date does **not** mean working multiple physical shifts that day.
+
+Recommendation and UI copy must use “shift-equivalent” / “earnings unit” language when describing planned scenario actions, and must not claim that all required units fit strictly before the first risk date when the required count exceeds the number of forecast days on or before that date.
 
 7.15 Safe-to-Spend
 
@@ -187,20 +189,20 @@ Missing information must never produce a false Safe result.
 
 9. Scenario Controls
 
-The 60-minute MVP supports only:
+The MVP supports only:
 
-* Adding a planned shift on a selected forecast date.
-* Removing a planned shift.
-* Resetting all planned shifts.
+* Adding one **planned shift-equivalent** (one accessible-earnings unit) on a selected forecast date.
+* Removing one planned shift-equivalent.
+* Resetting all planned shift-equivalents.
 
-Multiple planned shifts may be added on the same forecast date (stacking).
+Multiple units may be placed on the same forecast date to model “that much accessible cash by that date,” not multiple physical shifts in 24 hours.
 
 Each change recalculates:
 
 * Safety status.
 * Minimum projected balance.
 * First risk date.
-* Required shifts.
+* Required shift-equivalents.
 * Safe-to-spend.
 * Recommended action.
 
@@ -210,16 +212,16 @@ Custom earnings, payout timing, reserve adjustment and spending reduction are ou
 
 Condition	Recommendation
 Safe	Stopping today is safe within the modeled horizon
-Caution	Preserve cash or add shifts to restore the reserve
-At Risk (schedule within day count)	Add the calculated shifts to cover the coverage gap; prioritize on or before the first risk date when the shift count fits the available days on or before that date
-At Risk (requires stacking or later earnings)	Add the calculated shifts to cover the coverage gap; state the first risk date; disclose that the count is cash need, not distinct workdays, and that stacking same-day shifts and/or later earnings may be required
+Caution	Preserve cash or add shift-equivalents to restore the reserve
+At Risk (schedule within day count)	Add the calculated shift-equivalents to cover the coverage gap; prioritize landing accessible earnings on or before the first risk date when the count fits available days
+At Risk (requires stacking or later earnings)	Add the calculated shift-equivalents to cover the coverage gap; state the first risk date; disclose that units are cash chunks (not distinct workdays) and may share a calendar date or land after the risk date
 Insufficient Data	Review the missing information before deciding
 
 Recommendations must include the primary reason and relevant dollar amounts.
 
 Do not use “Add N shifts before {first risk date}” as the sole instruction when N exceeds available forecast days on or before that date.
 
-Design detail: `docs/score-lift-plan.md` Package H.
+Design detail: `docs/score-lift-plan.md` Package E (terminology).
 
 11. MVP Data Sources
 

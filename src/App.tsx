@@ -116,9 +116,8 @@ export default function App() {
             </select>
           </label>
           <p className="demo-hint">
-            Try {DEMO_WORKERS.atRisk} (rent cliff) → add shifts → status changes;{' '}
-            {DEMO_WORKERS.delayedPay} (delayed payout conservatism); {DEMO_WORKERS.safe} (Safe
-            control).
+            Try {DEMO_WORKERS.atRisk} (rent cliff) → add earnings units on/before risk → status
+            changes; {DEMO_WORKERS.delayedPay} (delayed payout); {DEMO_WORKERS.safe} (Safe control).
           </p>
         </div>
       </header>
@@ -134,7 +133,7 @@ export default function App() {
         <p className="action">{decision.recommendedAction}</p>
         <div className="metrics">
           <div>
-            <span className="metric-label">Required shifts</span>
+            <span className="metric-label">Required shift-equivalents</span>
             <span className="metric-value">
               {decision.requiredAdditionalShifts === 'Unavailable'
                 ? 'Unavailable'
@@ -159,7 +158,7 @@ export default function App() {
           </div>
         </div>
         <p className="payout-line">
-          Accessible per shift:{' '}
+          Accessible per shift-equivalent:{' '}
           {decision.accessibleEarningsPerShiftCents === null
             ? 'unavailable'
             : formatCad(decision.accessibleEarningsPerShiftCents)}
@@ -176,7 +175,7 @@ export default function App() {
       </section>
 
       <section className="panel scenario">
-        <h2>Planned shifts</h2>
+        <h2>Planned shift-equivalents</h2>
         <div className="scenario-controls">
           <label>
             Forecast date
@@ -184,28 +183,32 @@ export default function App() {
               {decision.forecast.map((d) => (
                 <option key={d.dateKey} value={d.dateKey}>
                   {d.dateKey}
-                  {d.plannedShiftCount > 0 ? ` (${d.plannedShiftCount} planned)` : ''}
+                  {d.plannedShiftCount > 0
+                    ? ` (${d.plannedShiftCount} unit${d.plannedShiftCount === 1 ? '' : 's'})`
+                    : ''}
                 </option>
               ))}
             </select>
           </label>
           <button type="button" onClick={addShift}>
-            Add shift
+            Add earnings unit
           </button>
           <button type="button" onClick={removeShift} disabled={planned.length === 0}>
-            Remove shift
+            Remove unit
           </button>
           <button type="button" onClick={() => setPlanned([])} disabled={planned.length === 0}>
             Reset
           </button>
         </div>
         <p className="hint">
-          {planned.length} planned shift(s). Stack multiple shifts on one forecast date if needed.
-          Earnings credited at accessible rate only (
+          {planned.length} planned unit(s). Each unit credits one shift-equivalent of accessible cash
+          on that date — not an extra physical shift in the same day. Place units on/before the risk
+          date to lift the rent trough; later dates only help if a later day is the minimum.
+          Accessible rate:{' '}
           {decision.accessibleEarningsPerShiftCents === null
             ? 'unavailable'
             : formatCad(decision.accessibleEarningsPerShiftCents)}
-          /shift).
+          /unit.
         </p>
       </section>
 
@@ -234,7 +237,7 @@ export default function App() {
         </div>
         <p className="legend">
           <span className="swatch hist" /> Projected balance
-          <span className="swatch plan" /> Has planned shift
+          <span className="swatch plan" /> Has planned earnings unit
           <span className="swatch risk" /> Negative day
         </p>
       </section>
@@ -268,7 +271,8 @@ export default function App() {
       </section>
 
       <footer className="foot">
-        Estimates only — not financial advice. Money stored as integer cents. Biweekly obligations
+        Estimates only — not financial advice. Money stored as integer cents. Required
+        shift-equivalents are accessible-cash units, not distinct workdays. Biweekly obligations
         excluded.
       </footer>
     </div>

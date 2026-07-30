@@ -35,7 +35,7 @@ For any selected worker in the dataset, ShiftSafe:
 2. Read the status, recommended action, required shifts, and safe-to-spend.
 3. Note **accessible per shift = median × same-day payout rate** (delayed pay counted conservatively).
 4. Review the 14-day forecast and upcoming obligations.
-5. Add planned shifts on forecast dates (stack on one day if needed) until the status improves.
+5. Add **earnings units** (shift-equivalents) on forecast dates on/before the risk trough until status improves. Multiple units on one date = more accessible cash that day, not multiple physical shifts.
 6. Switch to `W-0071` (Demo · Delayed pay) to see a rent cliff with ~38% same-day payout.
 7. Switch to `W-0072` (Demo · Safe) for the control case.
 8. Read the calculation explanation for assumptions.
@@ -76,11 +76,11 @@ No backend, database, authentication, or external financial APIs.
 - **Daily essential spending** = essential debits over prior 28 days ÷ 28, excluding rows with `obligation_id=` in notes (avoids double-counting forecast obligations without zeroing groceries/transit).
 - **Safety reserve** = 3 × daily essential spending.
 - **Forecast** = 14 days: prior balance + accessible planned-shift earnings − obligations due − daily essential spend.
-- **Required shifts** = ceil(coverage gap / accessible earnings), or Unavailable if accessible earnings are 0. This is **cash-gap equivalents**, not distinct workdays before the first risk date; planned shifts may be stacked on one date.
+- **Required shift-equivalents** = ceil(coverage gap / accessible earnings). Each unit is a **cash chunk** equal to one accessible shift — not a distinct workday. Multiple units on one date model cash timing, not working several jobs in 24 hours.
 - **Safe-to-spend** = max(0, min projected balance − reserve).
 - **Biweekly obligations excluded** (schedule not verifiable from `due_day_of_month` alone).
 
-Forecasts are estimates, not guarantees. Recommendations never claim all required shifts fit strictly before the first risk date when the count exceeds available forecast days on or before that date.
+Forecasts are estimates, not guarantees. Recommendations never claim all required units fit strictly before the first risk date when the count exceeds available forecast days on or before that date.
 
 ## Dataset usage
 
@@ -122,7 +122,7 @@ npm run preview
 - Delayed earnings have no explicit pay date — modeled via same-day payout rate.
 - Only **monthly** recurrence is implemented; **biweekly** rows are excluded and disclosed.
 - Reserve fixed at three days; not user-adjustable.
-- Required shifts measure coverage-gap cash need; they may exceed distinct days before first risk (stacking / later earnings disclosed in recommendations).
+- Required shift-equivalents measure coverage-gap cash need (accessible-cash units), not distinct workdays; multiple units may share a date.
 - Wage advances, custom analysis dates, and spending-reduction scenarios are out of scope.
 - Not financial advice.
 

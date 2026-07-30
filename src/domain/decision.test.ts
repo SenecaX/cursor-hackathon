@@ -404,10 +404,8 @@ describe('computeDecision', () => {
     expect(result.requiredAdditionalShifts as number).toBeGreaterThan(result.availableActionDays)
     expect(result.schedulePressure).toBe('requires_stacking_or_later_earnings')
     expect(result.recommendedAction).not.toMatch(/before 2026-07-01/)
-    expect(result.recommendedAction).toMatch(/cash needed|not distinct workdays/i)
-    expect(result.explanation.some((line) => line.includes('not a count of distinct days'))).toBe(
-      true,
-    )
+    expect(result.recommendedAction).toMatch(/shift-equivalent|cash chunk/i)
+    expect(result.explanation.some((line) => line.includes('cash chunk'))).toBe(true)
   })
 
   it('may prioritize on or before risk when shift count fits available days', () => {
@@ -452,8 +450,9 @@ describe('computeDecision', () => {
     expect(result.requiredAdditionalShifts as number).toBeGreaterThan(0)
     expect(result.requiredAdditionalShifts as number).toBeLessThanOrEqual(result.availableActionDays)
     expect(result.schedulePressure).toBe('within_day_count')
-    expect(result.recommendedAction).toMatch(/Prioritize shifts on or before/)
+    expect(result.recommendedAction).toMatch(/Prioritize landing that accessible cash on or before/)
     expect(result.recommendedAction).not.toMatch(/Add \d+ additional shift\(s\) before /)
+    expect(result.recommendedAction).toMatch(/shift-equivalent/)
   })
 
   it('counts grocery essentials even when housing obligations exist', () => {
